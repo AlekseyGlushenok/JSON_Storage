@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  web:
+    image: nginx
+    container_name: nginx.app
+    volumes:
+      - "./app:/app"
+      - "./Nginx/nginx.conf:/etc/nginx/conf.d/default.conf"
+    ports:
+      - 80:80
+    links:
+      - php
+
+  php:
+    build:
+      context: ./PHP
+      dockerfile: DockerfilePhp
+    container_name: php.app
+    volumes:
+      - "./app:/app"
+    links:
+      - db
+
+  db:
+    image: postgres
+    restart: always
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
