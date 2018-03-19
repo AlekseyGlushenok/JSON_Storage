@@ -20,7 +20,7 @@ class JsonService
 
     public function is_json($content)
     {
-        $data = json_decode($content);
+        json_decode($content);
         return (json_last_error() == JSON_ERROR_NONE);
     }
 }
