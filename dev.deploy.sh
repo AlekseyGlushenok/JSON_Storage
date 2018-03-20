@@ -9,6 +9,7 @@ function install_dependencies()
         wget -O docker.sh https://get.docker.com
         bash docker.sh
     fi
+    usermod -aG docker $USER
     pip3 install docker-compose
     sudo docker run -it --rm -v $(pwd)/app:/app composer install
 }
