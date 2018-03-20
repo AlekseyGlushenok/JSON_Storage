@@ -1,4 +1,5 @@
 /vendor
-/upload
+app/upload
 .idea
 .env
+htpasswd

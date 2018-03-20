@@ -1,6 +1,7 @@
 #! /bin/bash
 function install_dependencies()
 {
+
 	docker run -it --rm -v $(pwd)/app:/app composer install
 }
 
