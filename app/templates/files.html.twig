@@ -2,13 +2,29 @@
 
 {% block content %}
     <div class="container">
+        <div class="row">
+            <div class="col-lg-2">Общий размер:</div>
+            <div class="col-lg-2">{{ size / 1000 }} K</div>
+        </div>
         <ul class="list-group">
+                <li class="list-group-item row">
+                    <div class="col-lg-6">Название</div>
+                    <div class="col-lg-2">Размер</div>
+                    <div class="col-lg-4">Доступные опции</div>
+                </li>
             {% for file in files %}
                 <li class="list-group-item row">
-                    <div class="col-lg-6"><a href="/{{ file.url }}">{{ file.name }}</a></div>
+                    {% if file.public %}
+                        <div class="col-lg-6"><a href="/public/{{ file.url }}">{{ file.name }}</a></div>
+                    {% else %}
+                        <div class="col-lg-6"><a href="/private/{{ file.url }}">{{ file.name }}</a></div>
+                    {% endif %}
                     <div class="col-lg-2">{{ file.size / 1000}} K</div>
-                    <div class="col-lg-2"><a href="/download/{{ file.url }}">Download</a></div>
-                    <div class="col-lg-2"><a href="/delete/{{ file.url }}">Delete</a></div>
+                    <div class="btn-group center-block">
+                        <a class="btn btn-primary" href="/download/json/{{ file.url }}">JSON</a>
+                        <a class="btn btn-primary" href="/download/xml/{{ file.url }}">XML</a>
+                        <a class="btn btn-warning" href="/delete/{{ file.url }}">Delete</a>
+                    </div>
                 </li>
             {% endfor %}
         </ul>

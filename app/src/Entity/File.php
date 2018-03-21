@@ -156,11 +156,23 @@ class File
         fclose($fstr);
     }
 
-    public function moveUploadFileTo($fname, $uploadPath)
+    private function deleteDirIfEmpty($path)
     {
-        if(!file_exists(pathinfo($uploadPath . $this->path,PATHINFO_DIRNAME))){
-            mkdir(pathinfo($uploadPath . $this->path, PATHINFO_DIRNAME) , 0777, true);
+        $pathToDir = pathinfo($path, PATHINFO_DIRNAME);
+        if (empty(glob($pathToDir . '/*')))
+        {
+            rmdir($pathToDir);
+            $this->deleteDirIfEmpty($pathToDir);
         }
-        move_uploaded_file($fname, $uploadPath . $this->path);
+    }
+
+    public function deleteFile($path)
+    {
+        $path = trim($path);
+        if(file_exists($path))
+        {
+            unlink($path);
+            $this->deleteDirIfEmpty($path);
+        }
     }
 }

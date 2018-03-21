@@ -2,20 +2,19 @@
 
 namespace App\Services;
 
+use Symfony\Component\Serializer\Encoder\JsonDecode;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Encoder\XmlEncoder;
+
 
 
 class JsonService
 {
-    public function toXml()
+    public function toXml($content)
     {
-        $XML = '';
-        return $XML;
-    }
-
-    public function fromXml()
-    {
-        $result = '';
-        return $result;
+        return '';
     }
 
     public function is_json($content)

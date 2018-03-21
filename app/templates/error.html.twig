@@ -1,10 +1,14 @@
+{% extends'base.html.twig' %}
 {% block content %}
-    <div class="content">
-        <div class="error_message">
-            {{ error_message }}
+    <div class="container">
+        <div class="jumbotron alert alert-warning   ">
+            <div class="error_message">
+                <strong>Ошибка.</strong>
+                {{ error_message }}
+            </div>
+            <a class="btn btn-default" href="{{ back_url }}">
+                Назад
+            </a>
         </div>
-        <a class="btn" href="{{ back_url }}">
-            Назад
-        </a>
     </div>
 {% endblock content %}

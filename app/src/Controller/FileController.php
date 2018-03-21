@@ -7,6 +7,7 @@ use App\Services\EntityManager;
 use App\Services\JsonService;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,6 +25,7 @@ class FileController extends Controller
         $form = $this->createFormBuilder()
             ->add('content', TextareaType::class)
             ->add('file', FileType::class, array('required' => false))
+            ->add('private', CheckboxType::class, array('required' => false))
             ->add('submit', SubmitType::class)
             ->getForm();
 
@@ -31,22 +33,18 @@ class FileController extends Controller
 
         if ($form->isSubmitted() && $form->isValid()) {
             $uploadPath = $this->container->getParameter('upload_path');
+            $private = !$form->getData()['private'];
             if ($form->getData()['file'])
             {
                 $uploadFile = $form->getData()['file'];
-
-
                 $tmpPath    = $uploadFile->getPathName();
                 $originName = $uploadFile->getClientOriginalName();
                 $size       = $uploadFile->getSize();
-                if($json->is_json(file_get_contents($tmpPath)))
+                $content    = file_get_contents($tmpPath);
+
+                if($json->is_json($content))
                 {
-                    $unsplitPath = md5_file($tmpPath);
-                    $path = '/' . substr($unsplitPath, 0, 4) .
-                            '/' . substr($unsplitPath, 4, 4) .
-                            '/' . substr($unsplitPath, 8);
-                    $file = $em->saveFile($path, $originName, $size);
-                    $file->moveUploadFileTo($tmpPath, $uploadPath);
+                    $em->saveFile($uploadPath, $content, $originName, $size, $private);
                     return $this->redirectToRoute('index');
                 }
                 return $this->render('error.html.twig', [
@@ -58,45 +56,61 @@ class FileController extends Controller
                 $content = $form->getData()['content'];
                 if($json->is_json($content))
                 {
-                    $unsplitPath = md5($content);
-                    $path = '/' . substr($unsplitPath, 0, 4) .
-                            '/' . substr($unsplitPath, 4, 4) .
-                            '/' . substr($unsplitPath, 8);
-                    $file = $em->saveFile($path, 'unnamed', strlen($content));
-                    $file->saveFile($uploadPath, $content);
+                    $em->saveFile($uploadPath, $content,'unnamed', strlen($content), $private);
                     return $this->redirectToRoute('index');
                 }
                 return $this->render('error.html.twig', [
-                    'error_message' => 'Это не JSON',
+                    'error_message' => 'Данные не прошли валидацию',
                     'back_url' => '/upload'
                 ]);
             }
-
-
-//
-//
             return $this->render('error.html.twig', [
-                'error_message' => 'Ничего не пришло',
+                'error_message' => 'Выберете файл или отправте данные',
                 'back_url' => '/upload'
             ]);
         }
-        return $this->render('form.html.twig', array(
+        return $this->render('uploadform.html.twig', array(
             'form' => $form->createView(),
         ));
 
     }
 
     /**
-     * @Route("/public/{url}", name="getFileContent")
+     * @Route("/private/{url}", name="getPrivateFile")
+     */
+    public function privateFile($url, Request $request, EntityManager $em){
+        $file = $em->getFileByUrl($url);
+        $uploadPath = $this->container->getParameter('upload_path');
+        if ($file)
+        {
+            $content = file_get_contents(trim($uploadPath . $file->getPath()));
+            $em->deleteFileByUrl($url, $uploadPath);
+            return $this->render('private.html.twig', ['content' => $content]);
+        }
+        return $this->render('error.html.twig', [
+            'error_message' => "Файл не существует",
+            'back_url' => '/'
+        ]);
+    }
+    /**
+     * @Route("/public/{url}", name="updateFile")
      */
     public function updateFileContent($url,Request $request, EntityManager $em, JsonService $json)
     {
         $file = $em->getFileByUrl($url);
+        $error = [];
+        if (true != $file->isPublic())
+        {
+            return $this->render('error.html.twig', [
+                'error_message' => 'У вас нет доступа',
+                'back_url' => '/'
+            ]);
+        }
         $uploadPath = $this->container->getParameter('upload_path');
         $content = file_get_contents(trim($uploadPath.$file->getPath()));
         $form = $this->createFormBuilder()
             ->add('content', TextareaType::class, array('data' => $content))
-            ->add('save', SubmitType::class, array('label' => 'upload'))
+            ->add('update', SubmitType::class, array('label' => 'Обновить'))
             ->getForm();
 
         $form->handleRequest($request);
@@ -105,29 +119,37 @@ class FileController extends Controller
             $content = $form->getData()['content'];
             if($json->is_json($content))
             {
-                $file->saveFile($uploadPath, $content);
+                $em->updateFile($content, $file, $uploadPath);
+                return $this->redirectToRoute('index');
             }else{
                 return $this->render('error.html.twig', [
-                    'error_message' => 'Неверные данные',
-                    'back_url' => '/public'.$url
+                    'error_message' => 'Данные не прошли валидацию',
+                    'back_url' => '/public/'.$url
                 ]);
             }
         }
 
-        return $this->render('form.html.twig', array(
-            'form' => $form->createView(),
-        ));
+        if(empty($error)){
+            return $this->render('updateform.html.twig', array(
+                'form' => $form->createView(),
+            ));
+        }
+        return $this->render('error.html.twig', ['error' => $error]);
     }
 
     /**
-     * @Route ("/download/{url}", name="downloadFile")
+     * @Route ("/download/{fmt}/{url}", name="downloadFile")
      */
-    public function download($url, EntityManager $em)
+    public function download($fmt, $url, EntityManager $em, JsonService $json)
     {
         $response = new Response;
         $file = $em->getFileByUrl($url);
         $uploadPath = $this->container->getParameter('upload_path');
-        $content = file_get_contents(trim($uploadPath.$file->getPath()));
+        $content = file_get_contents(trim($uploadPath . $file->getPath()));
+        if ('xml' == $fmt)
+        {
+            $content = $json->toXml($content);
+        }
         $response->headers->set('Content-Disposition', 'attachment; filename='.$file->getName());
         $response->setContent($content);
         return $response;
@@ -138,9 +160,8 @@ class FileController extends Controller
      */
     public function delete($url, EntityManager $em)
     {
-        $file = $em->deleteFileByUrl($url);
         $uploadPath = $this->container->getParameter('upload_path');
-        unlink(trim($uploadPath.$file->getPath()));
+        $em->deleteFileByUrl($url, $uploadPath);
         return $this->redirectToRoute('index');
     }
 }

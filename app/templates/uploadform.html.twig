@@ -17,11 +17,25 @@
                 <div class="form-group">
                     {{ form_row(form.file,{
                         'label': 'Выберите файл',
-                        'required': false
+                        'required': false,
+                        'attr':{
+                            'class': 'form-control-file'
+                        }
                     }) }}
                 </div>
+
+                <div class="form-check  ">
+                    {{ form_widget(form.private, {'attr': {
+                        'class': 'form-check-input'
+                    }}) }}
+                    {{ form_errors(form.private) }}
+                    {{ form_label(form.private) }}
+                </div>
+
                 <div class="form-group">
-                    {{ form_row(form.submit) }}
+                    {{ form_row(form.submit,{
+                        'label': 'Отправить'
+                    }) }}
                 </div>
             {{ form_end(form) }}
         </div>
