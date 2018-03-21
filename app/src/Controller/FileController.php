@@ -148,7 +148,8 @@ class FileController extends Controller
         $content = file_get_contents(trim($uploadPath . $file->getPath()));
         if ('xml' == $fmt)
         {
-            $content = $json->toXml($content);
+            $content = $json->toXml($content)->asXML();
+            $response->headers->set('Content-Type', 'text/xml');
         }
         $response->headers->set('Content-Disposition', 'attachment; filename='.$file->getName());
         $response->setContent($content);
