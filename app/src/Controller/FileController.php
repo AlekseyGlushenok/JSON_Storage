@@ -4,18 +4,15 @@ namespace App\Controller;
 
 
 use App\Services\EntityManager;
-use App\Services\FileSystemService;
 use App\Services\JsonService;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
-//form fieldTypes
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 
 class FileController extends Controller
 {
@@ -25,43 +22,72 @@ class FileController extends Controller
     public function Upload(Request $request, JsonService $json, EntityManager $em)
     {
         $form = $this->createFormBuilder()
-            ->add('file', FileType::class)
-            ->add('save', SubmitType::class, array('label' => 'upload'))
+            ->add('content', TextareaType::class)
+            ->add('file', FileType::class, array('required' => false))
+            ->add('submit', SubmitType::class)
             ->getForm();
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $pathprefix = $this->container->getParameter('upload_path');
-            $path = date('Y/m/d/');
-
-            $tmpPath = $form->getData()['file']->getPathName();
-            $originName = $form->getData()['file']->getClientOriginalName();
-            $filename = $form->getData()['file']->getFileName();
-
-            if($json->is_json(file_get_contents($tmpPath)))
+            $uploadPath = $this->container->getParameter('upload_path');
+            if ($form->getData()['file'])
             {
-                if(!file_exists($pathprefix.$path)){
-                    mkdir($pathprefix . $path , 0777, true);
-                }
-                move_uploaded_file($form->getData()['file']->getPathName(), $pathprefix . $path . $filename);
-                $em->saveFile($path . $filename, $originName);
+                $uploadFile = $form->getData()['file'];
 
-            }else{
+
+                $tmpPath    = $uploadFile->getPathName();
+                $originName = $uploadFile->getClientOriginalName();
+                $size       = $uploadFile->getSize();
+                if($json->is_json(file_get_contents($tmpPath)))
+                {
+                    $unsplitPath = md5_file($tmpPath);
+                    $path = '/' . substr($unsplitPath, 0, 4) .
+                            '/' . substr($unsplitPath, 4, 4) .
+                            '/' . substr($unsplitPath, 8);
+                    $file = $em->saveFile($path, $originName, $size);
+                    $file->moveUploadFileTo($tmpPath, $uploadPath);
+                    return $this->redirectToRoute('index');
+                }
                 return $this->render('error.html.twig', [
                     'error_message' => 'Данный формат не поддерживается',
-                    'back_url' => '/'
+                    'back_url' => '/upload'
                 ]);
             }
-        }
+            if ($form->getData()['content']){
+                $content = $form->getData()['content'];
+                if($json->is_json($content))
+                {
+                    $unsplitPath = md5($content);
+                    $path = '/' . substr($unsplitPath, 0, 4) .
+                            '/' . substr($unsplitPath, 4, 4) .
+                            '/' . substr($unsplitPath, 8);
+                    $file = $em->saveFile($path, 'unnamed', strlen($content));
+                    $file->saveFile($uploadPath, $content);
+                    return $this->redirectToRoute('index');
+                }
+                return $this->render('error.html.twig', [
+                    'error_message' => 'Это не JSON',
+                    'back_url' => '/upload'
+                ]);
+            }
 
+
+//
+//
+            return $this->render('error.html.twig', [
+                'error_message' => 'Ничего не пришло',
+                'back_url' => '/upload'
+            ]);
+        }
         return $this->render('form.html.twig', array(
             'form' => $form->createView(),
         ));
+
     }
 
     /**
-     * @Route("/{url}", name="getFileContent")
+     * @Route("/public/{url}", name="getFileContent")
      */
     public function updateFileContent($url,Request $request, EntityManager $em, JsonService $json)
     {
@@ -69,23 +95,21 @@ class FileController extends Controller
         $uploadPath = $this->container->getParameter('upload_path');
         $content = file_get_contents(trim($uploadPath.$file->getPath()));
         $form = $this->createFormBuilder()
-            ->add('content', TextType::class, array('data' => $content))
+            ->add('content', TextareaType::class, array('data' => $content))
             ->add('save', SubmitType::class, array('label' => 'upload'))
             ->getForm();
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-
-            if($json->is_json($form->getData()['content']))
+            $content = $form->getData()['content'];
+            if($json->is_json($content))
             {
-                $f = fopen(trim($uploadPath . $file->getPath()),'w');
-                fwrite($f, $form->getData()['content']);
-                fclose($f);
+                $file->saveFile($uploadPath, $content);
             }else{
                 return $this->render('error.html.twig', [
                     'error_message' => 'Неверные данные',
-                    'back_url' => '/'.$url
+                    'back_url' => '/public'.$url
                 ]);
             }
         }

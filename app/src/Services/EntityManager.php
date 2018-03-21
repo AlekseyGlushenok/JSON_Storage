@@ -21,16 +21,16 @@ class EntityManager
         $this->entityManager = $entityManager;
     }
 
-    public function saveFile($path, $name, $pub = true)
+    public function saveFile($path, $name, $size)
     {
         $file = new File();
         $file->setName($name);
         $file->setPath($path);
-        $file->setPublic($pub);
         $file->setUrl(hash('md5', $path . $name));
+        $file->setSize($size);
         $this->entityManager->persist($file);
         $this->entityManager->flush();
-        return true;
+        return $file;
     }
 
     public function getPublicFiles()

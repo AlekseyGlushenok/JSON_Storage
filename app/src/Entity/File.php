@@ -52,6 +52,13 @@ class File
     private $name;
 
     /**
+     * @var int
+     *
+     * @ORM\Column(name="size", type="integer", nullable=false)
+     */
+    private $size;
+
+    /**
      * @return int
      */
     public function getId(): int
@@ -121,5 +128,39 @@ class File
     public function setName(string $name): void
     {
         $this->name = $name;
+    }
+
+    public function getSize()
+    {
+        return $this->size;
+    }
+
+    public function setSize(int $size)
+    {
+        $this->size = $size;
+    }
+
+    public function getFileContent($path)
+    {
+        $fullPath = trim($path . $this->path);
+        return file_get_contents($fullPath);
+    }
+
+    public function saveFile($uploadPath, $content)
+    {
+        if(!file_exists(pathinfo($uploadPath . $this->path,PATHINFO_DIRNAME))){
+            mkdir(pathinfo($uploadPath . $this->path, PATHINFO_DIRNAME) , 0777, true);
+        }
+        $fstr = fopen(trim($uploadPath . $this->path), 'w');
+        fwrite($fstr, $content);
+        fclose($fstr);
+    }
+
+    public function moveUploadFileTo($fname, $uploadPath)
+    {
+        if(!file_exists(pathinfo($uploadPath . $this->path,PATHINFO_DIRNAME))){
+            mkdir(pathinfo($uploadPath . $this->path, PATHINFO_DIRNAME) , 0777, true);
+        }
+        move_uploaded_file($fname, $uploadPath . $this->path);
     }
 }

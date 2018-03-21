@@ -1,5 +1,5 @@
 parameters:
-    upload_path: '%kernel.project_dir%/%env(resolve:UPLOAD_FILES_PATH)%'
+    upload_path: '%kernel.project_dir%%env(resolve:UPLOAD_FILES_PATH)%'
 
 services:
     _defaults:

@@ -1,7 +1,16 @@
+{% extends 'base.html.twig' %}
+
 {% block content %}
-    {% for file in files %}
-        <a href="/{{ file.url }}">{{ file.name }}</a>
-        <a href="/download/{{ file.url }}">Download</a>
-        <a href="/delete/{{ file.url }}">Delete</a>
-    {% endfor %}
+    <div class="container">
+        <ul class="list-group">
+            {% for file in files %}
+                <li class="list-group-item row">
+                    <div class="col-lg-6"><a href="/{{ file.url }}">{{ file.name }}</a></div>
+                    <div class="col-lg-2">{{ file.size / 1000}} K</div>
+                    <div class="col-lg-2"><a href="/download/{{ file.url }}">Download</a></div>
+                    <div class="col-lg-2"><a href="/delete/{{ file.url }}">Delete</a></div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
 {% endblock %}

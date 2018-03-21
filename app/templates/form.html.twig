@@ -1,1 +1,29 @@
-{{ form(form) }}
+{% extends 'base.html.twig' %}
+{% block content %}
+    <div class="container">
+        <div class="form">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="form-group">
+                    {{ form_row(form.content,{
+                        'label': 'Введите содержание',
+                        'required': false,
+                        'attr': {
+                            'class': 'form-control',
+                            'rows'  : 10
+                        }
+                    }) }}
+                </div>
+                <div class="form-group">
+                    {{ form_row(form.file,{
+                        'label': 'Выберите файл',
+                        'required': false
+                    }) }}
+                </div>
+                <div class="form-group">
+                    {{ form_row(form.submit) }}
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
