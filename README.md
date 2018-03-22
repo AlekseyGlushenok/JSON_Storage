@@ -10,6 +10,6 @@
 
 ## Installation guide
 * Скачать код из репозитория
-* Выполнить команду `chmod +x ./run.sh && ./run.sh`
+* Выполнить команду ``sudo chmod +x ./run.sh && ./run.sh``
 
 ## Documentation
