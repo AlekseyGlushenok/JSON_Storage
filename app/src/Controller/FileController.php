@@ -3,166 +3,228 @@
 namespace App\Controller;
 
 
-use App\Services\EntityManager;
+use App\Services\FileManager;
 use App\Services\JsonService;
 
+use App\Services\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 
 class FileController extends Controller
 {
-    /**
-     * @Route("/upload", name="upload")
-     */
-    public function Upload(Request $request, JsonService $json, EntityManager $em)
+
+    private function checkAccess($accessMod, $fileAccess)
     {
-        $form = $this->createFormBuilder()
-            ->add('content', TextareaType::class)
-            ->add('file', FileType::class, array('required' => false))
-            ->add('private', CheckboxType::class, array('required' => false))
-            ->add('submit', SubmitType::class)
-            ->getForm();
+        if (!$fileAccess && $fileAccess == ('public' == $accessMod))
+            return false;
+        return true;
+    }
+    /**
+     * @Route("/{accessMod}/files", name="sendFiles")
+     * @Method({"GET"})
+     */
+    public function sendFilesList($accessMod, FileManager $fileManager, ResponseService $response)
+    {
+        $files   = $fileManager->getFilesByPublic(('public' == $accessMod ));
+        $content = [];
 
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $uploadPath = $this->container->getParameter('upload_path');
-            $private = !$form->getData()['private'];
-            if ($form->getData()['file'])
-            {
-                $uploadFile = $form->getData()['file'];
-                $tmpPath    = $uploadFile->getPathName();
-                $originName = $uploadFile->getClientOriginalName();
-                $size       = $uploadFile->getSize();
-                $content    = file_get_contents($tmpPath);
-
-                if($json->is_json($content))
-                {
-                    $em->saveFile($uploadPath, $content, $originName, $size, $private);
-                    return $this->redirectToRoute('index');
-                }
-                return $this->render('error.html.twig', [
-                    'error_message' => 'Данный формат не поддерживается',
-                    'back_url' => '/upload'
-                ]);
-            }
-            if ($form->getData()['content']){
-                $content = $form->getData()['content'];
-                if($json->is_json($content))
-                {
-                    $em->saveFile($uploadPath, $content,'unnamed', strlen($content), $private);
-                    return $this->redirectToRoute('index');
-                }
-                return $this->render('error.html.twig', [
-                    'error_message' => 'Данные не прошли валидацию',
-                    'back_url' => '/upload'
-                ]);
-            }
-            return $this->render('error.html.twig', [
-                'error_message' => 'Выберете файл или отправте данные',
-                'back_url' => '/upload'
-            ]);
+        foreach($files as $file)
+        {
+            $content[] = [
+                'name' => trim($file->getName()),
+                'size' => $file->getSize(),
+                'url'  => trim($file->getUrl())
+            ];
         }
-        return $this->render('uploadform.html.twig', array(
-            'form' => $form->createView(),
-        ));
-
+        return $response->CreateJSONResponse(0, $content);
     }
 
     /**
-     * @Route("/private/{url}", name="getPrivateFile")
+     * @Route("/{accessMod}/file/{url}", name="sendFile")
+     * @Method({"GET"})
      */
-    public function privateFile($url, Request $request, EntityManager $em){
-        $file = $em->getFileByUrl($url);
-        $uploadPath = $this->container->getParameter('upload_path');
-        if ($file)
-        {
-            $content = file_get_contents(trim($uploadPath . $file->getPath()));
-            $em->deleteFileByUrl($url, $uploadPath);
-            return $this->render('private.html.twig', ['content' => $content]);
-        }
-        return $this->render('error.html.twig', [
-            'error_message' => "Файл не существует",
-            'back_url' => '/'
-        ]);
-    }
-    /**
-     * @Route("/public/{url}", name="updateFile")
-     */
-    public function updateFileContent($url,Request $request, EntityManager $em, JsonService $json)
+    public function sendFile($accessMod, $url, FileManager $fileManager, ResponseService $response)
     {
-        $file = $em->getFileByUrl($url);
-        $error = [];
-        if (true != $file->isPublic())
-        {
-            return $this->render('error.html.twig', [
-                'error_message' => 'У вас нет доступа',
-                'back_url' => '/'
-            ]);
-        }
+        $file       = $fileManager->getFileByUrl($url);
         $uploadPath = $this->container->getParameter('upload_path');
-        $content = file_get_contents(trim($uploadPath.$file->getPath()));
-        $form = $this->createFormBuilder()
-            ->add('content', TextareaType::class, array('data' => $content))
-            ->add('update', SubmitType::class, array('label' => 'Обновить'))
-            ->getForm();
+        $content    = [];
 
-        $form->handleRequest($request);
+        if (!$file)
+            return $response->CreateJSONResponse(31);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $content = $form->getData()['content'];
-            if($json->is_json($content))
+        if ($this->checkAccess($accessMod, $file->isPublic()))
+            return $response->CreateJSONResponse(4);
+
+        try {
+            $content['name'] = trim($file->getName());
+            $content['fileContent'] = $fileManager->getFileContent($file, $uploadPath);
+            return $response->CreateJSONResponse(0, $content);
+        }
+        catch (\Exception $exception){
+            $fileManager->forceDelete($file);
+            return $response->CreateJSONResponse(32);
+        }
+    }
+
+    /**
+     * @Route("/{accessMod}/upload", name="upload")
+     * @Method({"POST"})
+     */
+    public function upload($accessMod,
+                           Request $request,
+                           JsonService $json,
+                           FileManager $fileManager,
+                           ResponseService $response)
+    {
+        $uploadPath       = $this->container->getParameter('upload_path');
+        $response_content = [];
+        $access           = 'public' == $accessMod;
+
+        if (!empty($request->files))
+        {
+            foreach($request->files as $file)
             {
-                $em->updateFile($content, $file, $uploadPath);
-                return $this->redirectToRoute('index');
+                $content = file_get_contents($file->getPathName());
+                $name = $file->getClientOriginalName();
+                if ($json->is_json($content)){
+                    if($fileManager->saveFile($uploadPath, $content, $name, $file->getSize(), $access))
+                    {
+                        $response_content[] = ['status' => 0, 'content' => $name];
+                    }else{
+                        $response_content[] = ['status' => 33, 'content' => $name];
+                    }
+                }else{
+                    $response_content[] = ['status' => 22, 'content' => $name];
+                }
+            }
+
+        }
+
+        if($request->request->get('content'))
+        {
+            $name = $request->request->get('name');
+            if (!$name)
+                $name = 'unnamed';
+            $content = $request->request->get('content');
+            if ($json->is_json($content))
+            {
+                $size = strlen($content);
+                if($fileManager->saveFile($uploadPath, $content, $name, $size, $access))
+                {
+                    $response_content[] = ['status' => 0, 'content' => $name];
+                }else{
+                    $response_content[] = ['status' => 33, 'content' => $name];
+                }
             }else{
-                return $this->render('error.html.twig', [
-                    'error_message' => 'Данные не прошли валидацию',
-                    'back_url' => '/public/'.$url
-                ]);
+                $response_content[] = ['status' => 22, 'content' => $name];
             }
+
         }
 
-        if(empty($error)){
-            return $this->render('updateform.html.twig', array(
-                'form' => $form->createView(),
-            ));
-        }
-        return $this->render('error.html.twig', ['error' => $error]);
+        if (empty($response_content))
+            return $response->CreateJSONResponse(11);
+
+        return $response->CreateHardJSONResponse($response_content);
     }
 
     /**
-     * @Route ("/download/{fmt}/{url}", name="downloadFile")
+     * @Route("/{accessMod}/update/{url}", name="update")
+     * @Method({"POST"})
      */
-    public function download($fmt, $url, EntityManager $em, JsonService $json)
+    public function update($accessMod,
+                           $url,
+                           Request $request,
+                           JsonService $json,
+                           FileManager $fileManager,
+                           ResponseService $response)
     {
-        $response = new Response;
-        $file = $em->getFileByUrl($url);
         $uploadPath = $this->container->getParameter('upload_path');
-        $content = file_get_contents(trim($uploadPath . $file->getPath()));
-        if ('xml' == $fmt)
-        {
-            $content = $json->toXml($content)->asXML();
-            $response->headers->set('Content-Type', 'text/xml');
+        $content    = $request->request->get('content');
+        $file       = $fileManager->getFileByUrl($url);
+
+        if ($this->checkAccess($accessMod, $file->isPublic()))
+            return $response->CreateJSONResponse(4);
+
+        if (!$file)
+            return $response->CreateJSONResponse(31);
+
+        if (!$content)
+            return $response->CreateJSONResponse(11);
+
+        if(!$json->is_json($content))
+            return $response->CreateJSONResponse(22);
+
+        if(!$fileManager->updateFile($content, $file, $uploadPath))
+            return $response->CreateJSONResponse(33);
+
+        return $response->CreateJSONResponse(1, 'Файл обновлен');
+
+    }
+
+    /**
+     * @Route("/{accessMod}/delete/{url}", name="delete")
+     * @Method({"GET"})
+     */
+    public function delete($accessMod, $url,  FileManager $fileManager, ResponseService $response)
+    {
+        $uploadPath = $this->container->getParameter('upload_path');
+        $file       = $fileManager->getFileByUrl($url);
+
+        if(!$file)
+            return $response->CreateJSONResponse(31);
+
+        if ($this->checkAccess($accessMod, $file->isPublic()))
+            return $response->CreateJSONResponse(4);
+
+        if (!$fileManager->deleteFileByUrl($url, $uploadPath))
+            return $response->CreateJSONResponse(3);
+
+        return $response->CreateJSONResponse(0, 'Файл был удален');
+    }
+
+    /**
+     * @Route("/{accessMod}/download/{url}/{fmt}", name="download")
+     * @Method({"GET"})
+     */
+    public function download($accessMod,
+                             $url,
+                             $fmt = 'json',
+                             JsonService $json,
+                             FileManager $fileManager,
+                             ResponseService $response)
+    {
+        $file       = $fileManager->getFileByUrl($url);
+        $uploadPath = $this->container->getParameter('upload_path');
+
+        if (!$file)
+            return $response->CreateJSONResponse(31);
+
+        if ($this->checkAccess($accessMod, $file->isPublic()))
+            return $response->CreateJSONResponse(4);
+
+        try {
+            $content = $fileManager->getFileContent($file, $uploadPath);
+
+            if (!$file->isPublic())
+                $fileManager->deleteFileByUrl($url, $uploadPath);
         }
+        catch(\Exception $e)
+        {
+            $fileManager->forceDelete($file);
+            return $response->CreateJSONResponse(32);
+        }
+
+        if ('xml' == $fmt)
+            $content = $json->toXml($content)->asXML();
+
+
+        $response = new Response;
         $response->headers->set('Content-Disposition', 'attachment; filename='.$file->getName());
         $response->setContent($content);
         return $response;
-    }
-
-    /**
-     * @Route("/delete/{url}", name="deleteFile")
-     */
-    public function delete($url, EntityManager $em)
-    {
-        $uploadPath = $this->container->getParameter('upload_path');
-        $em->deleteFileByUrl($url, $uploadPath);
-        return $this->redirectToRoute('index');
     }
 }

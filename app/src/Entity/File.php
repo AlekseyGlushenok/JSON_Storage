@@ -139,40 +139,4 @@ class File
     {
         $this->size = $size;
     }
-
-    public function getFileContent($path)
-    {
-        $fullPath = trim($path . $this->path);
-        return file_get_contents($fullPath);
-    }
-
-    public function saveFile($uploadPath, $content)
-    {
-        if(!file_exists(pathinfo($uploadPath . $this->path,PATHINFO_DIRNAME))){
-            mkdir(pathinfo($uploadPath . $this->path, PATHINFO_DIRNAME) , 0777, true);
-        }
-        $fstr = fopen(trim($uploadPath . $this->path), 'w');
-        fwrite($fstr, $content);
-        fclose($fstr);
-    }
-
-    private function deleteDirIfEmpty($path)
-    {
-        $pathToDir = pathinfo($path, PATHINFO_DIRNAME);
-        if (empty(glob($pathToDir . '/*')))
-        {
-            rmdir($pathToDir);
-            $this->deleteDirIfEmpty($pathToDir);
-        }
-    }
-
-    public function deleteFile($path)
-    {
-        $path = trim($path);
-        if(file_exists($path))
-        {
-            unlink($path);
-            $this->deleteDirIfEmpty($path);
-        }
-    }
 }
