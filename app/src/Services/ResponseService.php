@@ -71,20 +71,20 @@ class ResponseService
         {
             $data[] = $this->status[$element['status']] + $element['content'];
         }
-        return new Response(json_encode($data));
+        return new Response(json_encode($data,JSON_UNESCAPED_UNICODE));
     }
 
     public function CreateJSONResponse($status, $content = ''){
         if($status)
         {
-            $response = new Response(json_encode($this->status[$status]));
+            $response = new Response(json_encode($this->status[$status],JSON_UNESCAPED_UNICODE));
             $response->setStatusCode(500);
             return $response;
         }else{
             $response = new Response();
             $response->setStatusCode(200);
             $data = $this->status[$status] + [ 'content' => $content];
-            return $response->setContent(json_encode($data));
+            return $response->setContent(json_encode($data, JSON_UNESCAPED_UNICODE));
         }
     }
 }

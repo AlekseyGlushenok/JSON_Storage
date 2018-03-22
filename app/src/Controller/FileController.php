@@ -19,7 +19,7 @@ class FileController extends Controller
 
     private function checkAccess($accessMod, $fileAccess)
     {
-        if (!$fileAccess && $fileAccess == ('public' == $accessMod))
+        if ($fileAccess || $fileAccess == ('public' == $accessMod))
             return false;
         return true;
     }
@@ -93,12 +93,12 @@ class FileController extends Controller
                 if ($json->is_json($content)){
                     if($fileManager->saveFile($uploadPath, $content, $name, $file->getSize(), $access))
                     {
-                        $response_content[] = ['status' => 0, 'content' => $name];
+                        $response_content[] = ['status' => 0, 'content' => array('name' => $name)];
                     }else{
-                        $response_content[] = ['status' => 33, 'content' => $name];
+                        $response_content[] = ['status' => 33, 'content' => array('name' => $name)];
                     }
                 }else{
-                    $response_content[] = ['status' => 22, 'content' => $name];
+                    $response_content[] = ['status' => 22, 'content' => array('name' => $name)];
                 }
             }
 
@@ -146,11 +146,11 @@ class FileController extends Controller
         $content    = $request->request->get('content');
         $file       = $fileManager->getFileByUrl($url);
 
-        if ($this->checkAccess($accessMod, $file->isPublic()))
-            return $response->CreateJSONResponse(4);
-
         if (!$file)
             return $response->CreateJSONResponse(31);
+
+        if ($this->checkAccess($accessMod, $file->isPublic()))
+            return $response->CreateJSONResponse(4);
 
         if (!$content)
             return $response->CreateJSONResponse(11);
@@ -161,7 +161,7 @@ class FileController extends Controller
         if(!$fileManager->updateFile($content, $file, $uploadPath))
             return $response->CreateJSONResponse(33);
 
-        return $response->CreateJSONResponse(1, 'Файл обновлен');
+        return $response->CreateJSONResponse(0, 'Файл обновлен');
 
     }
 
