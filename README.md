@@ -9,9 +9,10 @@
 * Формат ответа JSON
 
 ## Installation guide
+* Для установки необходим [`docker`](https://docs.docker.com/install/) и [`docker-compose`](https://docs.docker.com/compose/install/)
 * Скачать код из репозитория
 * Выполнить команду 
-```sudo chmod +x ./run.sh && ./run.sh```
+```sudo chmod +x ./run.sh && ./run.sh -i```
 * Следовать инструкциям при выполнении скрипта( Для подробной информации выполнить команду `./run.sh -h`)
 
 ## Documentation
