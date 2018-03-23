@@ -15,11 +15,6 @@ function configurate_project()
     echo "Введите имя пользвателя"
     read user
     htpasswd -c ./Nginx/htpasswd $user
-    clear
-    echo "Настройка приложения"
-    echo "Введите директорию для хранения данных"
-    read uploadPath
-    echo "UPLOAD_PATH=/$uploadPath" >> app/.env
 }
 
 function init_run()
