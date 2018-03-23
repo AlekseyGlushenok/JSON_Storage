@@ -52,7 +52,7 @@ http://server_name/{accessMod}/{operation}/{fileUrl}/{format}
 ```
 [
 	{   
-		'status': int',
+		'status': int,
 		'data': [],
 		'name': 'uploadFileName'
 	}, ...
