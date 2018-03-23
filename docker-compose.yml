@@ -3,7 +3,7 @@ version: "3"
 services:
   web:
     image: nginx
-    container_name: nginx.app
+    container_name: nginx.exam
     volumes:
       - "./app:/app"
       - "./Nginx/nginx.conf:/etc/nginx/conf.d/default.conf"
@@ -17,7 +17,7 @@ services:
     build:
       context: ./PHP
       dockerfile: DockerfilePhp
-    container_name: php.app
+    container_name: php.exam
     volumes:
       - "./app:/app"
     links:
@@ -25,13 +25,8 @@ services:
 
   db:
     image: postgres
-    container_name: db.app
+    container_name: db.exam
     restart: always
     volumes:
       - "./Postgres/1-schema.sql:/docker-entrypoint-initdb.d/init.sql"
-
-  adminer:
-    image: adminer
-    ports:
-      - 8080:8080
 

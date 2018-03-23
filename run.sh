@@ -3,14 +3,7 @@
 function install_dependencies()
 {
     sudo apt-get update
-    sudo apt-get install -y python3-pip apache2-utils
-    which docker
-    if ! which docker > /dev/null; then
-        wget -O docker.sh https://get.docker.com
-        bash docker.sh
-    fi
-    sudo usermod -aG docker $USER
-    pip3 install docker-compose
+    sudo apt-get install -y apache2-utils
     sudo docker run -it --rm -v $(pwd)/app:/app composer install
 }
 
@@ -18,7 +11,7 @@ function configurate_project()
 {
     sudo chmod 777 -R app/
     clear
-    echo "Настройка прав доступа"
+    echo "Настройка авторизации"
     echo "Введите имя пользвателя"
     read user
     htpasswd -c ./Nginx/htpasswd $user
