@@ -28,10 +28,10 @@ services:
     container_name: db.app
     restart: always
     volumes:
-      - "./db:/var/lib/postgresql/data"
+      - "./Postgres/1-schema.sql:/docker-entrypoint-initdb.d/init.sql"
 
   adminer:
     image: adminer
-    restart: always
     ports:
       - 8080:8080
+
