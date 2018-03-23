@@ -9,7 +9,7 @@
 * Формат ответа JSON
 
 ## Installation guide
-* Для установки необходим ['docker'](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce-1) и 'docker-compose'
+* Для установки необходим [`docker`](https://docs.docker.com/install/) и [`docker-compose`](https://docs.docker.com/compose/install/)
 * Скачать код из репозитория
 * Выполнить команду 
 ```sudo chmod +x ./run.sh && ./run.sh```
