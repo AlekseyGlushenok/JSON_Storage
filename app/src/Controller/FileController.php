@@ -115,14 +115,13 @@ class FileController extends Controller
                 $size = strlen($content);
                 if($fileManager->saveFile($uploadPath, $content, $name, $size, $access))
                 {
-                    $response_content[] = ['status' => 0, 'content' => $name];
+                    $response_content[] = ['status' => 0, array('content' => $name)];
                 }else{
-                    $response_content[] = ['status' => 33, 'content' => $name];
+                    $response_content[] = ['status' => 33, array('content' => $name)];
                 }
             }else{
-                $response_content[] = ['status' => 22, 'content' => $name];
+                $response_content[] = ['status' => 22, array('content' => $name)];
             }
-
         }
 
         if (empty($response_content))
