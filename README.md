@@ -50,16 +50,13 @@ http://server_name/{accessMod}/{operation}/{fileUrl}/{format}
 
 При выполнении операции upload можно отправить несколько файлов тогда ответ сервера будет содержать статус для каждого файла.
 ```
-{
-	'status': 0,
-	'data': [
-		{   
-			'status': int',
-			'data': [],
-			'name': 'uploadFileName'
-		}, ...
-	]
-}
+[
+	{   
+		'status': int',
+		'data': [],
+		'name': 'uploadFileName'
+	}, ...
+]
 ```
 
 ### Статусы
