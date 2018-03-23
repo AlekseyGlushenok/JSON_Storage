@@ -9,18 +9,18 @@
 * Формат ответа JSON
 
 ## Installation guide
-* Для установки необходим [`docker`](https://docs.docker.com/install/) и [`docker-compose`](https://docs.docker.com/compose/install/)
-* Скачать код из репозитория
-* Выполнить команду 
+Для установки необходим [`docker`](https://docs.docker.com/install/) и [`docker-compose`](https://docs.docker.com/compose/install/)
+1. Скачать код из репозитория
+2. Выполнить команду 
 ```sudo chmod +x ./run.sh && ./run.sh -i```
-* Следовать инструкциям при выполнении скрипта( Для подробной информации выполнить команду `./run.sh -h`)
+3. Следовать инструкциям при выполнении скрипта( Для подробной информации выполнить команду `./run.sh -h`)
 
 ## Documentation
 
 ### Требования к запросам
 
 Запрос имеет формат
-http://server_name/{accessMod}/{operation}/{fileUrl}/{format}
+http://{server_name}/{accessMod}/{operation}/{fileUrl}/{format}
 
 #### AccessMod
 * public для доступа к публичным данным
@@ -44,7 +44,8 @@ http://server_name/{accessMod}/{operation}/{fileUrl}/{format}
 ```
 {
 	'status': int,
-	'data':[]
+	'data': string,
+	'content': []
 }
 ```
 
@@ -53,7 +54,7 @@ http://server_name/{accessMod}/{operation}/{fileUrl}/{format}
 [
 	{   
 		'status': int,
-		'data': [],
+		'data': string,
 		'name': 'uploadFileName'
 	}, ...
 ]
