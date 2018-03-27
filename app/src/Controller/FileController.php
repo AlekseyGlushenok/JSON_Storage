@@ -19,7 +19,7 @@ class FileController extends Controller
 
     private function checkAccess($accessMod, $fileAccess)
     {
-        if ($fileAccess || $fileAccess == ('public' == $accessMod))
+        if ($fileAccess || $fileAccess != ('private' != $accessMod))
             return false;
         return true;
     }
